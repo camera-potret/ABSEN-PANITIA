@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Absen Panitia</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard Panitia</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="grid">
+            <div class="card">
+                <h3>Pengaturan WA</h3>
+                <form method="POST">
+                    <div class="form-group">
+                        <label>Nomor WhatsApp (Contoh: 62812...)</label>
+                        <input type="text" name="wa_number" value="{{ settings.wa_number }}" required>
+                    </div>
+                    <button type="submit" class="btn">Update Nomor</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Import Data Excel</h3>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label>Upload File Excel (.xlsx / .xls)</label>
+                        <input type="file" name="excel_file" accept=".xlsx, .xls" required>
+                    </div>
+                    <button type="submit" class="btn btn-outline">Upload & Import</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card qr-container">
+            <h3>QR Code Absensi</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Scan QR ini untuk masuk ke menu absen</p>
+            <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code Absen" width="200">
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
+                <a href="{{ url_for('absen_landing') }}" target="_blank" class="btn btn-outline" style="max-width: 200px;">Buka Link</a>
+                <a href="{{ url_for('export_qr') }}" class="btn" style="max-width: 200px; background: #10b981;">Download PNG</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin-bottom: 0;">Daftar Kehadiran</h3>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('export_excel') }}" class="btn" style="max-width: 150px; font-size: 0.8rem; background: #059669;">Export Excel</a>
+                    <form action="{{ url_for('reset_data') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA data panitia? Tindakan ini tidak bisa dibatalkan.')">
+                        <button type="submit" class="btn" style="max-width: 150px; font-size: 0.8rem; background: var(--danger);">Reset Data</button>
+                    </form>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama Panitia</th>
+                            <th>Status</th>
+                            <th>Waktu</th>
+                            <th>Foto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-body">
+                        {% for p in panitia %}
+                        <tr>
+                            <td>{{ p.nama }}</td>
+                            <td>
+                                {% if p.status == 'masuk' %}
+                                    <span class="status-icon status-check">✅</span> Masuk
+                                {% elif p.status == 'izin' %}
+                                    <span class="status-icon status-info">ℹ️</span> Izin
+                                {% else %}
+                                    <span style="color: var(--text-muted)">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ p.waktu.strftime('%H:%M:%S') if p.waktu else '-' }}</td>
+                            <td>
+                                {% if p.foto_izin %}
+                                    <a href="{{ url_for('static', filename='uploads/' + p.foto_izin) }}" target="_blank" style="color: var(--primary)">Lihat</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateDashboard() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('attendance-body');
+                    tbody.innerHTML = '';
+                    data.forEach(p => {
+                        let statusHtml = '<span style="color: var(--text-muted)">-</span>';
+                        if (p.status === 'masuk') {
+                            statusHtml = '<span class="status-icon status-check">✅</span> Masuk';
+                        } else if (p.status === 'izin') {
+                            statusHtml = '<span class="status-icon status-info">ℹ️</span> Izin';
+                        }
+
+                        let fotoHtml = '-';
+                        if (p.foto) {
+                            fotoHtml = `<a href="/static/uploads/${p.foto}" target="_blank" style="color: var(--primary)">Lihat</a>`;
+                        }
+
+                        const row = `
+                            <tr>
+                                <td>${p.nama}</td>
+                                <td>${statusHtml}</td>
+                                <td>${p.waktu}</td>
+                                <td>${fotoHtml}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                })
+                .catch(err => console.error('Error fetching status:', err));
+        }
+
+        // Poll every 3 seconds
+        setInterval(updateDashboard, 3000);
+    </script>
+</body>
+</html>

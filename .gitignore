@@ -1,0 +1,11 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+instance/
+.env
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+sample_panitia.xlsx
+absen.db
+.gemini/

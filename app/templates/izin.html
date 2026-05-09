@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izin Panitia</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container" style="max-width: 500px;">
+        <a href="{{ url_for('absen_landing') }}" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">← Kembali</a>
+        <h1 style="margin-top: 1rem;">Form Izin</h1>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Pilih Nama Anda</label>
+                <select name="nama_id" required>
+                    <option value="" disabled selected>-- Pilih Nama --</option>
+                    {% for p in panitia %}
+                        <option value="{{ p.id }}">{{ p.nama }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Foto Surat Izin</label>
+                <input type="file" name="foto_izin" accept="image/*" required>
+            </div>
+            
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1.5rem;">
+                * Data akan dikirimkan ke WhatsApp Ketua Panitia.
+            </p>
+            
+            <button type="submit" class="btn" style="background: #3b82f6;">Kirim & Hubungi WA</button>
+        </form>
+    </div>
+</body>
+</html>
