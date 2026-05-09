@@ -89,7 +89,7 @@
                             <td>{{ p.waktu.strftime('%H:%M:%S') if p.waktu else '-' }}</td>
                             <td>
                                 {% if p.foto_izin %}
-                                    <a href="{{ url_for('static', filename='uploads/' + p.foto_izin) }}" target="_blank" style="color: var(--primary)">Lihat</a>
+                                    <a href="data:image/png;base64,{{ p.foto_izin }}" target="_blank" style="color: var(--primary)">Lihat</a>
                                 {% else %}
                                     -
                                 {% endif %}
@@ -119,7 +119,7 @@
 
                         let fotoHtml = '-';
                         if (p.foto) {
-                            fotoHtml = `<a href="/static/uploads/${p.foto}" target="_blank" style="color: var(--primary)">Lihat</a>`;
+                            fotoHtml = `<a href="data:image/png;base64,${p.foto}" target="_blank" style="color: var(--primary)">Lihat</a>`;
                         }
 
                         const row = `

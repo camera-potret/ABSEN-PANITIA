@@ -22,7 +22,7 @@ class Panitia(db.Model):
     nama = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20)) # 'masuk', 'izin', None
     waktu = db.Column(db.DateTime)
-    foto_izin = db.Column(db.String(200))
+    foto_izin = db.Column(db.Text) # Simpan sebagai Base64 string
 
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -112,17 +112,16 @@ def izin():
         
         p = Panitia.query.get(nama_id)
         
-        filename = None
+        base64_image = None
         if foto:
-            filename = secure_filename(f"{datetime.now().timestamp()}_{foto.filename}")
-            if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                os.makedirs(app.config['UPLOAD_FOLDER'])
-            foto.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # Baca foto dan konversi ke Base64
+            img_bytes = foto.read()
+            base64_image = base64.b64encode(img_bytes).decode('utf-8')
         
         if p and not p.status:
             p.status = 'izin'
             p.waktu = datetime.now()
-            p.foto_izin = filename
+            p.foto_izin = base64_image
             db.session.commit()
             
             # WhatsApp redirect
