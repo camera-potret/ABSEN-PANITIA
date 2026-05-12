@@ -36,7 +36,7 @@ with app.app_context():
     db.create_all()
     
     # Migration: Add new columns if missing
-    for col, col_type in [('timezone_str', 'VARCHAR(50)'), ('schedule_time', 'TIMESTAMP')]:
+    def add_col(col, col_type):
         try:
             db.session.execute(db.text(f'SELECT {col} FROM settings LIMIT 1'))
         except:
@@ -46,6 +46,9 @@ with app.app_context():
                 db.session.commit()
             except:
                 db.session.rollback()
+
+    add_col('timezone_str', 'VARCHAR(50)')
+    add_col('schedule_time', 'TIMESTAMP')
 
     if not Settings.query.first():
         db.session.add(Settings())
