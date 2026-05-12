@@ -6,6 +6,7 @@ import pandas as pd
 import qrcode
 import io
 import base64
+import pytz
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -27,27 +28,33 @@ class Panitia(db.Model):
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     wa_number = db.Column(db.String(20), default='628123456789')
-    max_arrival_time = db.Column(db.String(10), default='08:00')
+    timezone_str = db.Column(db.String(50), default='Asia/Jakarta')
+    schedule_time = db.Column(db.DateTime)
 
 # Create tables and run simple migrations
 with app.app_context():
     db.create_all()
     
-    # Simple migration: Add max_arrival_time if it doesn't exist
-    try:
-        db.session.execute(db.text('SELECT max_arrival_time FROM settings LIMIT 1'))
-    except:
-        db.session.rollback()
+    # Migration: Add new columns if missing
+    for col, col_type in [('timezone_str', 'VARCHAR(50)'), ('schedule_time', 'TIMESTAMP')]:
         try:
-            db.session.execute(db.text('ALTER TABLE settings ADD COLUMN max_arrival_time VARCHAR(10) DEFAULT \'08:00\''))
-            db.session.commit()
-        except Exception as e:
+            db.session.execute(db.text(f'SELECT {col} FROM settings LIMIT 1'))
+        except:
             db.session.rollback()
-            print(f"Migration error: {e}")
+            try:
+                db.session.execute(db.text(f'ALTER TABLE settings ADD COLUMN {col} {col_type}'))
+                db.session.commit()
+            except:
+                db.session.rollback()
 
     if not Settings.query.first():
         db.session.add(Settings())
         db.session.commit()
+
+# Helper for Local Time
+def get_local_now(tz_str='Asia/Jakarta'):
+    tz = pytz.timezone(tz_str)
+    return datetime.now(tz).replace(tzinfo=None)
 
 # Helper for QR Code
 def generate_qr(url):
@@ -71,7 +78,12 @@ def dashboard():
     if request.method == 'POST':
         if 'wa_number' in request.form:
             settings.wa_number = request.form['wa_number']
-            settings.max_arrival_time = request.form.get('max_arrival_time', '08:00')
+            settings.timezone_str = request.form.get('timezone_str', 'Asia/Jakarta')
+            
+            sched_str = request.form.get('schedule_time')
+            if sched_str:
+                settings.schedule_time = datetime.strptime(sched_str, '%Y-%m-%dT%H:%M')
+            
             db.session.commit()
             flash('Pengaturan berhasil diperbarui!', 'success')
         
@@ -108,22 +120,16 @@ def masuk():
         nama_id = request.form.get('nama_id')
         p = Panitia.query.get(nama_id)
         if p and not p.status:
-            now = datetime.now()
+            settings = Settings.query.first()
+            now = get_local_now(settings.timezone_str)
             p.waktu = now
             
             # Check if late
-            settings = Settings.query.first()
-            if settings and settings.max_arrival_time:
-                try:
-                    limit_h, limit_m = map(int, settings.max_arrival_time.split(':'))
-                    limit_time = now.replace(hour=limit_h, minute=limit_m, second=0, microsecond=0)
-                    if now > limit_time:
-                        p.status = 'terlambat'
-                        msg = "Terlambat! Absen berhasil dicatat."
-                    else:
-                        p.status = 'masuk'
-                        msg = "Berhasil masuk!"
-                except:
+            if settings and settings.schedule_time:
+                if now > settings.schedule_time:
+                    p.status = 'terlambat'
+                    msg = "Terlambat! Absen berhasil dicatat."
+                else:
                     p.status = 'masuk'
                     msg = "Berhasil masuk!"
             else:
@@ -165,6 +171,7 @@ def izin():
 
 @app.route('/api/status')
 def api_status():
+    settings = Settings.query.first()
     panitia_list = Panitia.query.all()
     data = []
     for p in panitia_list:
@@ -172,7 +179,7 @@ def api_status():
             'id': p.id,
             'nama': p.nama,
             'status': p.status,
-            'waktu': p.waktu.strftime('%H:%M:%S') if p.waktu else '-',
+            'waktu': p.waktu.strftime('%Y-%m-%d %H:%M:%S') if p.waktu else '-',
             'alasan': p.foto_izin if p.foto_izin else None
         })
     return jsonify(data)
