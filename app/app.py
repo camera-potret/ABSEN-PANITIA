@@ -22,7 +22,7 @@ class Panitia(db.Model):
     nama = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20)) # 'masuk', 'izin', None
     waktu = db.Column(db.DateTime)
-    foto_izin = db.Column(db.Text) # Simpan sebagai Base64 string
+    alasan_izin = db.Column(db.Text)
 
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -108,24 +108,18 @@ def izin():
     settings = Settings.query.first()
     if request.method == 'POST':
         nama_id = request.form.get('nama_id')
-        foto = request.files.get('foto_izin')
+        alasan = request.form.get('alasan_izin')
         
         p = Panitia.query.get(nama_id)
-        
-        base64_image = None
-        if foto:
-            # Baca foto dan konversi ke Base64
-            img_bytes = foto.read()
-            base64_image = base64.b64encode(img_bytes).decode('utf-8')
         
         if p and not p.status:
             p.status = 'izin'
             p.waktu = datetime.now()
-            p.foto_izin = base64_image
+            p.alasan_izin = alasan
             db.session.commit()
             
             # WhatsApp redirect
-            msg = f"Halo, saya {p.nama} ingin izin panitia. Berikut bukti surat izin saya."
+            msg = f"Halo, saya {p.nama} izin panitia dengan alasan: {alasan}"
             wa_url = f"https://wa.me/{settings.wa_number}?text={msg}"
             return redirect(wa_url)
         
@@ -144,7 +138,7 @@ def api_status():
             'nama': p.nama,
             'status': p.status,
             'waktu': p.waktu.strftime('%H:%M:%S') if p.waktu else '-',
-            'foto': p.foto_izin if p.foto_izin else None
+            'alasan': p.alasan_izin if p.alasan_izin else None
         })
     return jsonify(data)
 
@@ -157,6 +151,7 @@ def export_excel():
             'Nama': p.nama,
             'Status': p.status if p.status else '-',
             'Waktu': p.waktu.strftime('%H:%M:%S') if p.waktu else '-',
+            'Alasan': p.alasan_izin if p.alasan_izin else '-',
         })
     df = pd.DataFrame(data)
     

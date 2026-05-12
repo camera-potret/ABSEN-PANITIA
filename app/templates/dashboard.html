@@ -70,7 +70,7 @@
                             <th>Nama Panitia</th>
                             <th>Status</th>
                             <th>Waktu</th>
-                            <th>Foto</th>
+                            <th>Alasan</th>
                         </tr>
                     </thead>
                     <tbody id="attendance-body">
@@ -87,13 +87,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ p.waktu.strftime('%H:%M:%S') if p.waktu else '-' }}</td>
-                            <td>
-                                {% if p.foto_izin %}
-                                    <a href="data:image/png;base64,{{ p.foto_izin }}" target="_blank" style="color: var(--primary)">Lihat</a>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
+                            <td>{{ p.alasan_izin if p.alasan_izin else '-' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -120,17 +114,12 @@
                             statusHtml = '<span class="status-icon status-info">ℹ️</span> Izin';
                         }
 
-                        let fotoHtml = '-';
-                        if (p.foto) {
-                            fotoHtml = `<a href="data:image/png;base64,${p.foto}" target="_blank" style="color: var(--primary)">Lihat</a>`;
-                        }
-
                         const row = `
                             <tr>
                                 <td>${p.nama}</td>
                                 <td>${statusHtml}</td>
                                 <td>${p.waktu}</td>
-                                <td>${fotoHtml}</td>
+                                <td>${p.alasan || '-'}</td>
                             </tr>
                         `;
                         tbody.innerHTML += row;
