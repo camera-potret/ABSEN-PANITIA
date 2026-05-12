@@ -29,9 +29,22 @@ class Settings(db.Model):
     wa_number = db.Column(db.String(20), default='628123456789')
     max_arrival_time = db.Column(db.String(10), default='08:00')
 
-# Create tables
+# Create tables and run simple migrations
 with app.app_context():
     db.create_all()
+    
+    # Simple migration: Add max_arrival_time if it doesn't exist
+    try:
+        db.session.execute(db.text('SELECT max_arrival_time FROM settings LIMIT 1'))
+    except:
+        db.session.rollback()
+        try:
+            db.session.execute(db.text('ALTER TABLE settings ADD COLUMN max_arrival_time VARCHAR(10) DEFAULT \'08:00\''))
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Migration error: {e}")
+
     if not Settings.query.first():
         db.session.add(Settings())
         db.session.commit()
