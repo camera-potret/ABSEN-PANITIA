@@ -22,7 +22,7 @@ class Panitia(db.Model):
     nama = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20)) # 'masuk', 'izin', None
     waktu = db.Column(db.DateTime)
-    alasan_izin = db.Column(db.Text)
+    foto_izin = db.Column(db.Text)
 
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -115,7 +115,7 @@ def izin():
         if p and not p.status:
             p.status = 'izin'
             p.waktu = datetime.now()
-            p.alasan_izin = alasan
+            p.foto_izin = alasan
             db.session.commit()
             
             # WhatsApp redirect
@@ -138,7 +138,7 @@ def api_status():
             'nama': p.nama,
             'status': p.status,
             'waktu': p.waktu.strftime('%H:%M:%S') if p.waktu else '-',
-            'alasan': p.alasan_izin if p.alasan_izin else None
+            'alasan': p.foto_izin if p.foto_izin else None
         })
     return jsonify(data)
 
@@ -151,7 +151,7 @@ def export_excel():
             'Nama': p.nama,
             'Status': p.status if p.status else '-',
             'Waktu': p.waktu.strftime('%H:%M:%S') if p.waktu else '-',
-            'Alasan': p.alasan_izin if p.alasan_izin else '-',
+            'Alasan': p.foto_izin if p.foto_izin else '-',
         })
     df = pd.DataFrame(data)
     
