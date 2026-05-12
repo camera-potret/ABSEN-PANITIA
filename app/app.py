@@ -27,6 +27,7 @@ class Panitia(db.Model):
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     wa_number = db.Column(db.String(20), default='628123456789')
+    max_arrival_time = db.Column(db.String(10), default='08:00')
 
 # Create tables
 with app.app_context():
@@ -57,8 +58,9 @@ def dashboard():
     if request.method == 'POST':
         if 'wa_number' in request.form:
             settings.wa_number = request.form['wa_number']
+            settings.max_arrival_time = request.form.get('max_arrival_time', '08:00')
             db.session.commit()
-            flash('Nomor WA berhasil diperbarui!', 'success')
+            flash('Pengaturan berhasil diperbarui!', 'success')
         
         elif 'excel_file' in request.files:
             file = request.files['excel_file']
@@ -93,10 +95,30 @@ def masuk():
         nama_id = request.form.get('nama_id')
         p = Panitia.query.get(nama_id)
         if p and not p.status:
-            p.status = 'masuk'
-            p.waktu = datetime.now()
+            now = datetime.now()
+            p.waktu = now
+            
+            # Check if late
+            settings = Settings.query.first()
+            if settings and settings.max_arrival_time:
+                try:
+                    limit_h, limit_m = map(int, settings.max_arrival_time.split(':'))
+                    limit_time = now.replace(hour=limit_h, minute=limit_m, second=0, microsecond=0)
+                    if now > limit_time:
+                        p.status = 'terlambat'
+                        msg = "Terlambat! Absen berhasil dicatat."
+                    else:
+                        p.status = 'masuk'
+                        msg = "Berhasil masuk!"
+                except:
+                    p.status = 'masuk'
+                    msg = "Berhasil masuk!"
+            else:
+                p.status = 'masuk'
+                msg = "Berhasil masuk!"
+                
             db.session.commit()
-            return render_template('status.html', success=True, message="Berhasil masuk!")
+            return render_template('status.html', success=True, message=msg)
         return render_template('status.html', success=False, message="Gagal! Nama sudah dipilih atau tidak ditemukan.")
     
     # Only show panitia who haven't selected status yet

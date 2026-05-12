@@ -21,13 +21,17 @@
 
         <div class="grid">
             <div class="card">
-                <h3>Pengaturan WA</h3>
+                <h3>Pengaturan Absen</h3>
                 <form method="POST">
                     <div class="form-group">
                         <label>Nomor WhatsApp (Contoh: 62812...)</label>
                         <input type="text" name="wa_number" value="{{ settings.wa_number }}" required>
                     </div>
-                    <button type="submit" class="btn">Update Nomor</button>
+                    <div class="form-group">
+                        <label>Maksimal Kedatangan</label>
+                        <input type="time" name="max_arrival_time" value="{{ settings.max_arrival_time }}" required style="width: 100%; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; color: white; outline: none;">
+                    </div>
+                    <button type="submit" class="btn">Simpan Pengaturan</button>
                 </form>
             </div>
 
@@ -80,6 +84,8 @@
                             <td>
                                 {% if p.status == 'masuk' %}
                                     <span class="status-icon status-check">✅</span> Masuk
+                                {% elif p.status == 'terlambat' %}
+                                    <span class="status-icon status-warning">⏰</span> Terlambat
                                 {% elif p.status == 'izin' %}
                                     <span class="status-icon status-info">ℹ️</span> Izin
                                 {% else %}
@@ -110,6 +116,8 @@
                         let statusHtml = '<span style="color: var(--text-muted)">-</span>';
                         if (p.status === 'masuk') {
                             statusHtml = '<span class="status-icon status-check">✅</span> Masuk';
+                        } else if (p.status === 'terlambat') {
+                            statusHtml = '<span class="status-icon status-warning">⏰</span> Terlambat';
                         } else if (p.status === 'izin') {
                             statusHtml = '<span class="status-icon status-info">ℹ️</span> Izin';
                         }

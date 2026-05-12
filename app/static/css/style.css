@@ -147,6 +147,7 @@ th {
 
 .status-check { color: var(--success); }
 .status-info { color: #3b82f6; }
+.status-warning { color: #f59e0b; }
 
 .qr-container {
     text-align: center;
